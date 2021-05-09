@@ -57830,7 +57830,6 @@ def tossupSolve(puzz,tu,g,cat):
     global letters_chosen
     global all_letters
     print("\n.\n.")
-    input(" ")
     player_turn = inputErrorHandle("Which player is trying to solve (Player 1, 2, or 3)? ",0)
     curr_name = getPlayer(int(player_turn))[0]
     curr_bank = getPlayer(int(player_turn))[1]
@@ -58343,8 +58342,6 @@ while not end_game:
                 consonants_chosen = []; vowels_chosen = []
                 if games == 5:
                     input(" ")
-                    input(" ")
-                    input(" ")
                     inputErrorHandle("\nTime for our final toss-up, worth $3,000. Are you ready? ",11)  
                 print("\n-----------------------------------------------------------------------------------------\n")
 
@@ -58356,6 +58353,7 @@ while not end_game:
     ###########################################
     # One final toss-up (worth $3,000)
     flush = True
+    tossup_solve = "no"
     for games in range(6,7): 
         in_play = True  # Continue gameplay until puzzle is solved
         print("-------------------------------")
@@ -58386,7 +58384,6 @@ while not end_game:
             if list(set(list(puzzle)))[u] in all_letters:
                 u_puzzle.append(list(set(list(puzzle)))[u])
 
-        input(" ")
         print("\nOkay, players. Press Enter when you want to solve the puzzle. Go.\n\n")
         time.sleep(2.5)
         all_rev = False
