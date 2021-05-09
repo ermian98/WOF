@@ -58343,6 +58343,8 @@ while not end_game:
                 consonants_chosen = []; vowels_chosen = []
                 if games == 5:
                     input(" ")
+                    input(" ")
+                    input(" ")
                     inputErrorHandle("\nTime for our final toss-up, worth $3,000. Are you ready? ",11)  
                 print("\n-----------------------------------------------------------------------------------------\n")
 
@@ -58383,7 +58385,8 @@ while not end_game:
         for u in range(len(set(list(puzzle)))):
             if list(set(list(puzzle)))[u] in all_letters:
                 u_puzzle.append(list(set(list(puzzle)))[u])
-                
+
+        input(" ")
         print("\nOkay, players. Press Enter when you want to solve the puzzle. Go.\n\n")
         time.sleep(2.5)
         all_rev = False
@@ -58499,8 +58502,7 @@ while not end_game:
 
         print("\n")
         status = puzzleDisplay(puzzle,"",flush)
-        print("\n\nCategory: " + category)
-        print("\n")
+        print("\n\n\nCategory: " + category + "\n")
         
         turns = 0
         while in_play:
@@ -58573,8 +58575,12 @@ while not end_game:
                         time.sleep(5.5)
                         print(".\n.")
                         episodeCheck(puzzle,category)      
-                        updateBank(player_turn,curr_bank)
-                        print(".\n.\n" + curr_name + ", your winnings that round were $" + str("{:,}".format(curr_bank)) + ". Congrats!")
+                        if curr_bank < 1000:
+                            updateBank(player_turn,1000)
+                            print(".\n.\n" + curr_name + ", your winnings that round were $1,000! That is our house minimum.")         
+                        else:
+                            updateBank(player_turn,curr_bank)
+                            print(".\n.\n" + curr_name + ", your winnings that round were $" + str("{:,}".format(curr_bank)) + ". Congrats!")
                         time.sleep(3.5)
                         print(".\n.\nLet's take a look at the game summary. The person with the most cash is moving on to the bonus round.\n.\n.")
                         time.sleep(3.5)
