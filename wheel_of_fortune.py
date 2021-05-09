@@ -57918,11 +57918,11 @@ while not end_game:
     vowels_chosen = []
    
     print("WHEEL")
-    time.sleep(1.5)
+    time.sleep(1.3)
     print("OF")
-    time.sleep(1.5)
+    time.sleep(1.3)
     print("FORTUNE!")
-    time.sleep(2.5)
+    time.sleep(2.3)
     print(".\n.\nStar Trek TOS Edition!")
     time.sleep(2.5)
     print(".\n.\nGreetings! You're playing America's Game with a science fiction twist!\n.\n.")
@@ -57969,9 +57969,9 @@ while not end_game:
     print(".\n.\nI'm sure you know the rules. It's Hangman with a little sci-fi twist. Plus, you could win up to $1,000,000 in cash and prizes!")
     time.sleep(5.5)
     print(".\n.\nThe category of each puzzle will be a Star Trek character plus a TOS season, e.g. 'Kirk (Season 2)'.")
-    time.sleep(6.5)
+    time.sleep(5.5)
     print(".\n.\nThe puzzle will be a randomly generated quote spoken by that character during that season.")
-    time.sleep(6.5)
+    time.sleep(5.5)
     inputErrorHandle(".\n.\nBuckle up, this'll be interesting. Are you ready? ",11)
     print(".\n.\nFantastic! Let's start off with two toss-up rounds, worth $1,000 and $2,000.")
     time.sleep(4.5)
@@ -58017,7 +58017,7 @@ while not end_game:
                 u_puzzle.append(list(set(list(puzzle)))[u])
         
         print("\nOkay, players. Press Enter when you want to solve the puzzle. Go.\n\n")
-        time.sleep(.5)
+        time.sleep(2.5)
         all_rev = False
         tossup_print = [] # List of strings that are displayed one after another with new letters
         rand_cons = "" # Randomly fill in the puzzle
@@ -58343,7 +58343,6 @@ while not end_game:
                 consonants_chosen = []; vowels_chosen = []
                 if games == 5:
                     input(" ")
-                    input(" ")
                     inputErrorHandle("\nTime for our final toss-up, worth $3,000. Are you ready? ",11)  
                 print("\n-----------------------------------------------------------------------------------------\n")
 
@@ -58450,7 +58449,8 @@ while not end_game:
         print("The category of this puzzle is: " + category + "\n\n") 
         puzzle = doMarkovify(puz_markov[1],25,50) # Markovify and display first board
         time.sleep(2.5)
-        
+
+        print("\n")
         displayBank(p1_name,p2_name,p3_name)
         time.sleep(3.5)
         
@@ -58497,8 +58497,10 @@ while not end_game:
         curr_bank = getPlayer(player_turn)[1]
         curr_mil = getPlayer(player_turn)[2]
 
-        print("\n\n")
+        print("\n")
         status = puzzleDisplay(puzzle,"",flush)
+        print("\n\nCategory: " + category)
+        print("\n")
         
         turns = 0
         while in_play:
@@ -58753,7 +58755,7 @@ while not end_game:
                 time.sleep(5.5)
                 print(".\n.")
                 episodeCheck(puzzle,category)
-                print(".\n.\n Not let's see what you've won...")
+                print(".\n.\nNow let's see what you've won...")
                 time.sleep(3.5)
                 print(".\n.\n     $" + str("{:,}".format(curr_prize)))
                 curr_bank = curr_bank + curr_prize
