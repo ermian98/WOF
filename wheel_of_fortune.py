@@ -58565,17 +58565,17 @@ while not end_game:
                 for puzz in tossup_print:
                     print('\r' + str(puzz), end='')
                     if (p_cnt == len(tossup_print) - 5) and diff.lower() == "hard":
-                        in_play = tossupSolve(puzzle,toss_ups,games,category,"hard")
+                        in_play = tossupSolve(puzzle,toss_ups,3,category,"hard")
                         if in_play == False:
                             break
                         tossup_solve = "no"
                     elif (p_cnt == len(tossup_print) - 4) and diff.lower() == "medium":
-                        in_play = tossupSolve(puzzle,toss_ups,games,category,"medium")
+                        in_play = tossupSolve(puzzle,toss_ups,3,category,"medium")
                         if in_play == False:
                             break
                         tossup_solve = "no"
                     elif (p_cnt == len(tossup_print) - 3) and diff.lower() == "easy":
-                        in_play = tossupSolve(puzzle,toss_ups,games,category,"easy")
+                        in_play = tossupSolve(puzzle,toss_ups,3,category,"easy")
                         if in_play == False:
                             break
                         tossup_solve = "no"
@@ -58584,21 +58584,21 @@ while not end_game:
                               threading.Timer(1.5, ls.stop).start()
                               ls.join()
                               if tossup_solve == "yes":
-                                  in_play = tossupSolve(puzzle,toss_ups,games,category,"")
+                                  in_play = tossupSolve(puzzle,toss_ups,3,category,"")
                                   if in_play == False:
                                       break
                               tossup_solve = "no"
                     p_cnt = p_cnt + 1
             all_rev = True
             if diff.lower() != "" and all_rev == True and in_play == True:
-               in_play = tossupSolve(puzzle,toss_ups,games,category,"hard")
+               in_play = tossupSolve(puzzle,toss_ups,3,category,"hard")
                tossup_solve = "no"
             elif all_rev == True and in_play == True:
                 print('\r' + str(puzz), end='')
                 with pynput.keyboard.Listener(on_press=onPress) as ls:
                     ls.join()
                 if tossup_solve == "yes":
-                    in_play = tossupSolve(puzzle,toss_ups,games,category,"")
+                    in_play = tossupSolve(puzzle,toss_ups,3,category,"")
                     tossup_solve = "no"
         letters_chosen = []
         consonants_chosen = []; vowels_chosen = []
@@ -58804,11 +58804,11 @@ while not end_game:
                     solve_final = "solve"
                 elif puzzle.count(letter_choice) == 1 and solve_time == False:
                     if curr_name == "Computer #1" or curr_name == "Computer #2":
-                        if diff.lower() == 'easy' and turns >= 13 and random.randint(1,max(19-turns-math.floor(80/len(puzzle)))) == 1:
+                        if diff.lower() == 'easy' and turns >= 13 and random.randint(1,max(19-turns-math.floor(80/len(puzzle)),1)) == 1:
                             solve_final = 'solve'
-                        elif diff.lower() == 'medium' and turns >= 11 and random.randint(1,max(17-turns-math.floor(80/len(puzzle)))) == 1:
+                        elif diff.lower() == 'medium' and turns >= 11 and random.randint(1,max(17-turns-math.floor(80/len(puzzle)),1)) == 1:
                             solve_final = 'solve'
-                        elif diff.lower() == 'hard' and turns >= 9 and random.randint(1,max(15-turns-math.floor(80/len(puzzle)))) == 1:
+                        elif diff.lower() == 'hard' and turns >= 9 and random.randint(1,max(15-turns-math.floor(80/len(puzzle)),1)) == 1:
                             solve_final = 'solve'
                         else:
                             solve_final = 'skip'
