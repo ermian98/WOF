@@ -1,13 +1,15 @@
 # Wheel of Fortune #
 # Eric Anderson #
-# May 8th, 2021 #
+# May 15th, 2021 #
 
+import math
 import time
 import random
 import threading
 import markovify
 import statistics
 import pynput
+
 
 ###################################################################################
 # Puzzle lists (entire Star Trek TOS transcripts)
@@ -57276,7 +57278,7 @@ Nurse Chapel. Bring Mister Spock and Doctor McCoy to me at once. Now they must b
 She is suffering from the delusion of being Captain Kirk.
 I am not Janice Lester!
 The paranoia has been developing for the past six months. The radiation seems to have intensified it. She must be kept sedated.
-Shall prepare a mild sedative, Doctor?
+Shall I prepare a mild sedative, Doctor?
 Of course.
 You are insane, Doctor Lester.
 I must've sounded quite mad to you before.
@@ -57482,6 +57484,9 @@ global p2_m ; p2_m = ""
 global p3_m ; p3_m = ""
 
 global tossup_solve ; tossup_solve = "no"
+global been_here; been_here = False
+global num_p ; num_p = ""
+global category; category = ""
 
 
 ###############################################################################################
@@ -57501,12 +57506,29 @@ def displayBank(p1n,p2n,p3n):
         print("---------------------")
         print("('[M]' means that player is holding the $1,000,000 wedge)\n\n")
     else:
-        print("---------------------\n")   
+        print("---------------------\n")
 
+
+# Obtain a random character and season, e.g. Kirk (Season 2)
+# Get quotes and prepare format for Markovify
+def doMarkovify_1(lower,upper):
+    global category
+    season = random.randint(1,3)
+    puz_markov = markovSeason(season)
+    character = puz_markov[0]
+    if character != "MCCOY":
+        character = character.title()
+    else:
+        character = "McCoy"
+    category = character + " (Season " + str(season) + ")"
+    print("\n\nThe category of this puzzle is: " + category + "\n\n") 
+
+    return doMarkovify_2(puz_markov[1],lower,upper,category) # Markovify and display first board
+    
 
 # Randomly generate sentences between [lower,upper] characters using Markovify (possibility of exact quotation)
 # Lots of iteration to ensure a unique quote
-def doMarkovify(my_text,lower,upper):
+def doMarkovify_2(my_text,lower,upper,cat):
     m_list = []
     count = 4
     while len(m_list) < 50 and count > 0:
@@ -57533,7 +57555,7 @@ def doMarkovify(my_text,lower,upper):
            p = p.replace(b,"")
         p = p.upper()
         status = puzzleDisplay(p,"",False)
-        print("\n\n\nCategory:", category + "\n")
+        print("\n\n\nCategory:", cat + "\n")
         return p
 
 
@@ -57648,9 +57670,8 @@ def getBank(iii):
 def getPlayer(iii):
     global p1_temp_bank ; global p2_temp_bank ; global p3_temp_bank
     global p1_m; global p2_m; global p3_m
-    cn = ""
     cb = 0
-    cm = ""
+    cn = "" ; cm = ""
     if iii == 1:
         cn = p1_name
         cb = p1_temp_bank
@@ -57663,7 +57684,7 @@ def getPlayer(iii):
         cn = p3_name
         cb = p3_temp_bank
         cm = p3_m
-    return [cn, cb, cm]
+    return [cn, cb, cm] # return them in an array for processing individually
 
 
 # User input error handling function (differentiated by input prompt)
@@ -57676,8 +57697,8 @@ def inputErrorHandle(txt_str,err_num):
         while entry.lower() != "easy" and entry.lower() != "medium" and entry.lower() != "hard":
             entry = input("Please type 'Easy', 'Medium', or 'Hard': ")
     elif err_num == 2:
-        while len(entry) < 1 or len(entry) > 26:
-            entry = input("I'm cordial, but don't mess with me. Please type a reasonably lengthy name: ")
+        while len(entry) < 1 or len(entry) > 26 or entry == "Computer #1" or entry == "Computer #2":
+            entry = input("I'm cordial, but don't mess with me. Please type a reasonable name: ")
     elif err_num == 3:
         while len(entry) != 0:
             entry = input("Press Enter! ")
@@ -57720,7 +57741,10 @@ def inputErrorHandle(txt_str,err_num):
             entry = input("Don't be nervous. Type 'Yes' or exit the game (but why waste the opportunity of a lifetime?): ")      
     elif err_num == 12:
         while entry.lower() != "solve" and entry.lower() != "skip":
-            entry = input("Please type 'Solve' or 'Skip': ")  
+            entry = input("Please type 'Solve' or 'Skip': ")
+    elif err_num == 13:
+        while entry.lower() != "yes" and entry.lower() != "no":
+            entry = input("Type 'yes' or 'no'. ")
     return entry
 
 
@@ -57768,21 +57792,12 @@ def puzzleDisplay(puzzle,letter,flush):
         print("     ",end='')
     for s in range(0,len(puzzle.split())):
         for c in range(0,len(puzzle.split()[s])):
-            if puzzle.split()[s][c] == ",":
-                temp_hide.append(",")
-                puzzle_hide.append(",")
-            elif puzzle.split()[s][c] == "?":
-                temp_hide.append("?")
-                puzzle_hide.append("?")
-            elif puzzle.split()[s][c] == "!":
-                temp_hide.append("!")
-                puzzle_hide.append("!")
-            elif puzzle.split()[s][c] == "\'":
-                temp_hide.append("\'")
-                puzzle_hide.append("\'")
-            elif puzzle.split()[s][c] == "-":
-                temp_hide.append("-")
-                puzzle_hide.append("-")
+            if puzzle.split()[s][c] in [",","?","!","-","\'"]:
+                temp_hide.append(puzzle.split()[s][c])
+                puzzle_hide.append(puzzle.split()[s][c])
+            elif puzzle.split()[s][c] in ['1','2','3','4','5','6','7','8','9','0']:
+                temp_hide.append(puzzle.split()[s][c])
+                puzzle_hide.append(puzzle.split()[s][c])              
             elif puzzle.split()[s][c] in letters_chosen: # This is where the chosen letter gets revealed
                 temp_hide.append(puzzle.split()[s][c])
                 puzzle_hide.append(puzzle.split()[s][c])
@@ -57817,25 +57832,53 @@ def resetEverything():
     global p1_bank ; global p2_bank ; global p3_bank
     global p1_m ; global p2_m ; global p3_m
     global tossup_solve
+    global been_here
 
     p1_temp_bank = 0 ; p2_temp_bank = 0 ; p3_temp_bank = 0
     p1_bank = 0 ; p2_bank = 0 ; p3_bank = 0
     p1_m = "" ; p2_m = "" ; p3_m = ""
     tossup_solve = "no"
+    been_here = False
 
 
 # Toss-up solving text (similar to regular round text)
-def tossupSolve(puzz,tu,g,cat):
-    global tossup_solve
-    global letters_chosen
-    global all_letters
+def tossupSolve(puzz,tu,g,cat,d):
+    global tossup_solve ; global letters_chosen ; global all_letters ; global been_here; global num_p; global kb
+    player_turn = ""
     print("\n.\n.")
-    player_turn = inputErrorHandle("Which player is trying to solve (Player 1, 2, or 3)? ",0)
-    curr_name = getPlayer(int(player_turn))[0]
-    curr_bank = getPlayer(int(player_turn))[1]
-    curr_mil = getPlayer(int(player_turn))[2]
-    print(".\n.\nOkay, " + str(curr_name) + ". Type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
-    solve_guess = input("           ")
+    if d == "":
+        input(" ")
+    if d != "":
+        if num_p == '1':
+            player_turn = str(random.randint(2,3))
+        elif num_p == '2':
+            player_turn = '3'
+        curr_name = getPlayer(int(player_turn))[0]
+        curr_bank = getPlayer(int(player_turn))[1]
+        curr_mil = getPlayer(int(player_turn))[2]
+        print("     " + str(curr_name) + " is solving...\n.\n.")
+        time.sleep(3.5)
+        if d == 'easy' and random.randint(1,4) == 1:
+            solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzz.split()])
+        elif d == 'medium' and random.randint(1,8) == 1:
+            solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzz.split()])
+        elif d == 'hard' and random.randint(1,16) == 1:
+            solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzz.split()])
+        else:
+            solve_guess = puzz
+        print("           " + solve_guess)
+        time.sleep(2.5)
+    else:
+        player_turn = inputErrorHandle("Which player is trying to solve (Player 1, 2, or 3)? ",0)
+        while num_p == '1' and (player_turn == '2' or player_turn == '3'):
+            player_turn = inputErrorHandle(".\n.\nYou sure you wanna donate your money to the computer?! Type your player number. ",0)
+        while num_p == '2' and player_turn == '3':
+            player_turn = inputErrorHandle(".\n.\nYou sure you wanna donate your money to the computer?! Type your player number. ",0)
+        curr_name = getPlayer(int(player_turn))[0]
+        curr_bank = getPlayer(int(player_turn))[1]
+        curr_mil = getPlayer(int(player_turn))[2]
+        print(".\n.\nOkay, " + str(curr_name) + ". Type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
+        solve_guess = input("           ")
     if solve_guess.upper() == puzz:
         in_play = False
         if g < 4:
@@ -57849,6 +57892,7 @@ def tossupSolve(puzz,tu,g,cat):
         time.sleep(5.5)
         print(".\n.")
         episodeCheck(puzz,cat)
+        input(" ")
         print(".\n.\n" + str(curr_name) + ", that brings your game total to $" + str("{:,}".format(getBank(int(player_turn)))) + ".\n")
         time.sleep(5.5)
         if curr_mil == " [M]":
@@ -57859,6 +57903,7 @@ def tossupSolve(puzz,tu,g,cat):
         tossup_solve = "no"
     else:
         in_play = True
+        been_here = True
         print("\nNo, that is incorrect. Continue playing.\n\n")
         time.sleep(2)
         
@@ -57899,22 +57944,21 @@ def updateTempBank(p_num,c_bank,flag):
 # Begin main program
 
 print("Eric Anderson")
-print("May 8th, 2021\n")
+print("May 15th, 2021\n")
 
 winnings = [] # Should the players play more than once, this stores their winnings by game...
 p_winner = [] # ... and the victor's name
 end_game = False  # Allows for replaying of the game, so long as the player specifies
+input_count = 0 # To help alleviate the hitting enter too many times problem
 while not end_game:
     
     # Initialize/reset wheel configurations
-    wheel_R1_3 = [900,500,350,600,500,400,550,700,900,500,3500,300,500,450,500,800,1000,650,1000000,0,0,0,10]
+    wheel_R1_3 = [900,500,350,600,500,400,550,700,900,500,3500,300,500,450,500,800,1000,650,1000000,0,0,10]
     wheel_R4 = [900,500,350,600,500,400,550,800,300,700,900,500,5000,300,500,450,500,800,650,700]
     wheel_B = [32000,35000,38000,40000,50000,100000]
 
     # Letters; letters chosen in current round; consonants and vowels
-    letters_chosen = []
-    consonants_chosen = []
-    vowels_chosen = []
+    letters_chosen = [] ; consonants_chosen = [] ; vowels_chosen = []
    
     print("WHEEL")
     time.sleep(1.3)
@@ -57928,7 +57972,6 @@ while not end_game:
     time.sleep(4.5)
     inputErrorHandle("Before we begin, please maximize your game window for the best playing experience. Press Enter when finished: ",3)
     print(".\n.")
-
     diff = "" ; p1_name = "" ; p2_name = "" ; p3_name = ""
     num_p = inputErrorHandle("Okay! Up to three players can play at once! How many are playing today? ",0)
 
@@ -57971,6 +58014,7 @@ while not end_game:
     time.sleep(5.5)
     print(".\n.\nThe puzzle will be a randomly generated quote spoken by that character during that season.")
     time.sleep(5.5)
+    
     inputErrorHandle(".\n.\nBuckle up, this'll be interesting. Are you ready? ",11)
     print(".\n.\nFantastic! Let's start off with two toss-up rounds, worth $1,000 and $2,000.")
     time.sleep(4.5)
@@ -57986,26 +58030,17 @@ while not end_game:
     curr_mil = ""
     for games in range(1,3): # Three toss-ups
         in_play = True  # Continue gameplay until puzzle is solved
+        been_here = False
         print("--------------------------------")
         print("   Round " + str(games) + ": (Toss-up, " + str(toss_ups[games-1]) + ")")
-        print("--------------------------------\n")
+        print("--------------------------------")
         time.sleep(2.5)
         
-        # Obtain a random character and season, e.g. Kirk (Season 2)
-        # Get quotes and prepare format for Markovify
-        season = random.randint(1,3)
-        puz_markov = markovSeason(season)
-        character = puz_markov[0]
-        if character != "MCCOY":
-            character = character.title()
-        else:
-            character = "McCoy"
-        category = character + " (Season " + str(season) + ")"
-        print("The category of this puzzle is: " + category + "\n\n") 
-        puzzle = doMarkovify(puz_markov[1],25,50) # Markovify and display first board
+        # Markovify and display first board
+        puzzle = doMarkovify_1(24,46)
+        time.sleep(3.5)
         
         # Display bank for each player/computer
-        time.sleep(3.5)
         displayBank(p1_name,p2_name,p3_name)
         time.sleep(3.5)
         
@@ -58016,7 +58051,7 @@ while not end_game:
                 u_puzzle.append(list(set(list(puzzle)))[u])
         
         print("\nOkay, players. Press Enter when you want to solve the puzzle. Go.\n\n")
-        time.sleep(2.5)
+        time.sleep(3.5)
         all_rev = False
         tossup_print = [] # List of strings that are displayed one after another with new letters
         rand_cons = "" # Randomly fill in the puzzle
@@ -58028,23 +58063,44 @@ while not end_game:
             tossup_print.append("     " + puzzleDisplay(puzzle,rand_cons,True))
         while in_play:
             if all_rev == False:
+                p_cnt = 0
                 for puzz in tossup_print:
                     print('\r' + str(puzz), end='')
-                    with pynput.keyboard.Listener(on_press=onPress) as ls:
-                          threading.Timer(1.1, ls.stop).start()
-                          ls.join()
-                          if tossup_solve == "yes":
-                              in_play = tossupSolve(puzzle,toss_ups,games,category)
-                              if in_play == False:
-                                  break
-                          tossup_solve = "no"
+                    if (p_cnt == len(tossup_print) - 5) and diff.lower() == "hard":
+                        in_play = tossupSolve(puzzle,toss_ups,games,category,"hard")
+                        if in_play == False:
+                            break
+                        tossup_solve = "no"
+                    elif (p_cnt == len(tossup_print) - 4) and diff.lower() == "medium":
+                        in_play = tossupSolve(puzzle,toss_ups,games,category,"medium")
+                        if in_play == False:
+                            break
+                        tossup_solve = "no"
+                    elif (p_cnt == len(tossup_print) - 3) and diff.lower() == "easy":
+                        in_play = tossupSolve(puzzle,toss_ups,games,category,"easy")
+                        if in_play == False:
+                            break
+                        tossup_solve = "no"
+                    else:
+                        with pynput.keyboard.Listener(on_press=onPress) as ls:
+                              threading.Timer(1.5, ls.stop).start()
+                              ls.join()
+                              if tossup_solve == "yes":
+                                  in_play = tossupSolve(puzzle,toss_ups,games,category,"")
+                                  if in_play == False:
+                                      break
+                              tossup_solve = "no"
+                    p_cnt = p_cnt + 1
             all_rev = True
-            if all_rev == True and in_play == True:
+            if diff.lower() != "" and all_rev == True and in_play == True:
+               in_play = tossupSolve(puzzle,toss_ups,games,category,"hard")
+               tossup_solve = "no"
+            elif all_rev == True and in_play == True:
                 print('\r' + str(puzz), end='')
                 with pynput.keyboard.Listener(on_press=onPress) as ls:
                     ls.join()
                 if tossup_solve == "yes":
-                    in_play = tossupSolve(puzzle,toss_ups,games,category)
+                    in_play = tossupSolve(puzzle,toss_ups,games,category,"")
                     tossup_solve = "no"
         letters_chosen = []
         consonants_chosen = []; vowels_chosen = []
@@ -58066,22 +58122,12 @@ while not end_game:
 
         print("----------------------")
         print("      Round " + str(games) + ":")
-        print("----------------------\n")
+        print("----------------------")
         time.sleep(2.5)
-
-        # Obtain a random character and season, e.g. Kirk (Season 2)
-        # Get quotes and prepare format for Markovify
-        season = random.randint(1,3)
-        puz_markov = markovSeason(season)
-        character = puz_markov[0]
-        if character != "MCCOY":
-            character = character.title()
-        else:
-            character = "McCoy"
-        category = character + " (Season " + str(season) + ")"
-        print("The category of this puzzle is: " + category + "\n\n") 
-        puzzle = doMarkovify(puz_markov[1],40,80) # Markovify and display first board
-        time.sleep(2.5)
+        
+        # Markovify and display first board
+        puzzle = doMarkovify_1(30,66)
+        time.sleep(3.5)
 
         # Which player's turn? (player with least amount of money)
         banks = [p1_bank,p2_bank,p3_bank]
@@ -58091,10 +58137,21 @@ while not end_game:
             player_turn = 2
         else:
             player_turn = 0
-        time.sleep(3.5)
         curr_name = getPlayer(player_turn)[0]  # Current player spinning/solving and their ROUND bank
         curr_bank = getPlayer(player_turn)[1]
         curr_mil = getPlayer(player_turn)[2] # Current $1,000,000 wedge flag
+
+        u_puzzle = []
+        uc_puzzle = []
+        uv_puzzle = []
+        # Get unique LETTERS in puzzle
+        for u in range(len(set(list(puzzle)))):
+            if list(set(list(puzzle)))[u] in all_letters:
+                u_puzzle.append(list(set(list(puzzle)))[u])
+                if list(set(list(puzzle)))[u] in ['A','E','I','O','U']:
+                    uv_puzzle.append(list(set(list(puzzle)))[u])
+                else:
+                    uc_puzzle.append(list(set(list(puzzle)))[u])
         
         turns = 0
         while in_play:
@@ -58111,9 +58168,34 @@ while not end_game:
                 print("('[M]' means that player is holding the $1,000,000 wedge)\n\n")
             else:
                 print("---------------------\n")
-            
-            if turns == 1:
-                input(" ")
+
+            # Adjusted difficulty level for certain aspects of game
+            adj_d = -1 + len(puzzle)/56 + turns/8
+            if diff.lower() == "medium":
+                adj_d = 0.5 + len(puzzle)/56 + turns/8
+            if diff.lower() == "hard":
+                adj_d = 2 + len(puzzle)/56 + turns/8
+            if curr_name == "Computer #1" or curr_name == "Computer #2":
+                if turns == 1:
+                    print(str(curr_name) + " is playing first...")
+                else:
+                    print(str(curr_name) + " is playing...")
+                time.sleep(2.5)
+                if len(consonants_chosen) == 21 and (curr_bank < 250 or len(vowels_chosen) == 5):
+                    p_action = 'solve'
+                elif (all(elem in consonants_chosen for elem in uc_puzzle)) and len(vowels_chosen) != 5:
+                    p_action = random.choice(['vowel','spin','solve'])
+                elif all(elem in vowels_chosen for elem in uv_puzzle) and (len(consonants_chosen) + adj_d >= len(uc_puzzle)) and curr_bank < 250:
+                    p_action = random.choice(['spin','spin','solve'])
+                elif (len(consonants_chosen) + adj_d >= len(uc_puzzle)) and curr_bank >= 250 and len(vowels_chosen) != 5:
+                    p_action = random.choice(['spin','spin','vowel','solve','solve'])
+                elif (len(consonants_chosen) + adj_d < len(uc_puzzle)) and curr_bank >= 250 and len(vowels_chosen) != 5:
+                    p_action = random.choice(['spin','spin','spin','vowel'])
+                elif len(vowels_chosen) != 5 and curr_bank >= 250:
+                    p_action = random.choice(['spin','vowel'])
+                else:
+                    p_action = 'spin'
+            elif turns == 1:  
                 host_text = str(curr_name) + ", you may go first. Press Enter to give the wheel a spin! "
                 p_action = inputErrorHandle(host_text,3)
             elif len(consonants_chosen) == 21 and curr_bank < 250:
@@ -58122,10 +58204,10 @@ while not end_game:
             elif len(consonants_chosen) == 21 and len(vowels_chosen) == 5:
                 host_text = str(curr_name) + ", you must attempt to solve the puzzle (type 'Solve'). "
                 p_action = inputErrorHandle(host_text,8)
-            elif len(consonants_chosen) == 21:
+            elif all(elem in consonants_chosen for elem in uc_puzzle): 
                 host_text = str(curr_name) + ", all consonants have been chosen. You may buy a vowel or solve. Which would you prefer? "
                 p_action = inputErrorHandle(host_text,9)
-            elif len(vowels_chosen) == 5:
+            elif all(elem in vowels_chosen for elem in uv_puzzle):
                 host_text = str(curr_name) + ", all vowels have been chosen. You may spin or solve. Which would you prefer? "
                 p_action = inputErrorHandle(host_text,7)
             elif curr_bank < 250:
@@ -58183,8 +58265,40 @@ while not end_game:
                     status = puzzleDisplay(puzzle,"",flush)
                     print("\n\n\n" + "Category:", category + "\n")
                 elif curr_prize == 1000000:
-                    print("It's the $1,000,000 wedge! Pick a consonant; if it's in the puzzle, you may have a shot at $1,000,000 if you reach the bonus round!\n\n")   
-                    consonant_choice = inputErrorHandle("But first, choose a consonant: ",4)
+                    print("It's the $1,000,000 wedge!")
+                    time.sleep(1.5)
+                    print(".\n.\nIf the letter you pick is in the puzzle, and you reach the bonus round without bankrupting, you could win $1,000,000!")   
+                    time.sleep(2.5)
+                    if curr_name == "Computer #1" or curr_name == "Computer #2":
+                        if diff.lower() == "medium" and random.randint(1,3) < 3:
+                            consonant_choice = random.choice(uc_puzzle)
+                            while consonant_choice in letters_chosen or consonant_choice in ['A','E','I','O','U']:
+                                if random.randint(1,3) < 3:
+                                    consonant_choice = random.choice(uc_puzzle)
+                                else:
+                                    consonant_choice = random.choice(all_letters)
+                        elif diff.lower() == "hard" and random.randint(1,4) < 4:
+                            consonant_choice = random.choice(uc_puzzle)
+                            while consonant_choice in letters_chosen or consonant_choice in ['A','E','I','O','U']:
+                                if random.randint(1,4) < 4:
+                                    consonant_choice = random.choice(uc_puzzle)
+                                else:
+                                    consonant_choice = random.choice(all_letters)
+                        elif diff.lower() == "easy" and random.randint(1,2) < 2:
+                            consonant_choice = random.choice(uc_puzzle)   
+                            while consonant_choice in letters_chosen or consonant_choice in ['A','E','I','O','U']:
+                                if random.randint(1,2) < 2:
+                                    consonant_choice = random.choice(uc_puzzle)
+                                else:
+                                    consonant_choice = random.choice(all_letters)
+                        else:
+                            consonant_choice = random.choice(all_letters)   
+                            while consonant_choice in letters_chosen or consonant_choice in ['A','E','I','O','U']:
+                                consonant_choice = random.choice(all_letters)                            
+                        print(".\n.\n     " + str(curr_name) + " chooses the letter " + consonant_choice + ".")
+                        time.sleep(2.5)
+                    else:
+                        consonant_choice = inputErrorHandle("\n\nBut first, choose a consonant: ",4)
                     consonant_choice = consonant_choice.upper()
                     letters_chosen.append(consonant_choice)
                     consonants_chosen.append(consonant_choice)
@@ -58213,15 +58327,44 @@ while not end_game:
                         status = puzzleDisplay(puzzle,"",flush)
                         print("\n\n\n" + "Category:", category + "\n")
                 else:
-                    consonant_choice = inputErrorHandle("     $" + str("{:,}".format(curr_prize)) + ". Choose a consonant: ",4)
+                    if curr_name == "Computer #1" or curr_name == "Computer #2":
+                        if diff.lower() == "medium" and random.randint(1,3) < 3:
+                            consonant_choice = random.choice(uc_puzzle)
+                            while consonant_choice in letters_chosen or consonant_choice in ['A','E','I','O','U']:
+                                if random.randint(1,3) < 3:
+                                    consonant_choice = random.choice(uc_puzzle)
+                                else:
+                                    consonant_choice = random.choice(all_letters)
+                        elif diff.lower() == "hard":
+                            consonant_choice = random.choice(uc_puzzle)
+                            while consonant_choice in letters_chosen or consonant_choice in ['A','E','I','O','U']:
+                                if random.randint(1,4) < 4 and random.randint(1,4) < 4:
+                                    consonant_choice = random.choice(uc_puzzle)
+                                else:
+                                    consonant_choice = random.choice(all_letters)
+                        elif diff.lower() == "easy":
+                            consonant_choice = random.choice(uc_puzzle)   
+                            while consonant_choice in letters_chosen or consonant_choice in ['A','E','I','O','U']:
+                                if random.randint(1,2) < 2 and random.randint(1,2) < 2:
+                                    consonant_choice = random.choice(uc_puzzle)
+                                else:
+                                    consonant_choice = random.choice(all_letters)
+                        else:
+                            consonant_choice = random.choice(all_letters)   
+                            while consonant_choice in letters_chosen or consonant_choice in ['A','E','I','O','U']:
+                                consonant_choice = random.choice(all_letters)  
+                        print("     $" + str("{:,}".format(curr_prize)) + ". " + str(curr_name) + " chooses the letter " + consonant_choice + ".")
+                        time.sleep(2.5)
+                    else:
+                        consonant_choice = inputErrorHandle("     $" + str("{:,}".format(curr_prize)) + ". Choose a consonant: ",4)
                     consonant_choice = consonant_choice.upper()
                     letters_chosen.append(consonant_choice)
                     consonants_chosen.append(consonant_choice)
                     if consonant_choice in puzzle:
                         if puzzle.count(consonant_choice) == 1:
-                            print(".\n.\nYes, there is " + str(puzzle.count(consonant_choice)) + " " + str(consonant_choice) + "!\n\n")
+                            print(".\n.\nYes, there is " + str(puzzle.count(consonant_choice)) + " " + str(consonant_choice) + ", worth $" + str("{:,}".format(curr_prize*puzzle.count(consonant_choice))) + "!\n\n")
                         else:
-                            print(".\n.\nYes, there are " + str(puzzle.count(consonant_choice)) + " " + str(consonant_choice) + "'s!\n\n")
+                            print(".\n.\nYes, there are " + str(puzzle.count(consonant_choice)) + " " + str(consonant_choice) + "'s, worth $" + str("{:,}".format(curr_prize*puzzle.count(consonant_choice))) + "!\n\n")
                         print(" ")
                         status = puzzleDisplay(puzzle,consonant_choice,flush)
                         print("\n\n\n" + "Category:", category + "\n")
@@ -58236,10 +58379,30 @@ while not end_game:
                         status = puzzleDisplay(puzzle,"",flush)
                         print("\n\n\n" + "Category:", category + "\n")
                 time.sleep(3.5)
-                
-            elif p_action.lower() == "vowel":
+               
+            elif p_action.lower() == "vowel":  
                 print(".\n.")
-                vowel_choice = inputErrorHandle("Choose a vowel (costs $250): ",5)
+                if curr_name == "Computer #1" or curr_name == "Computer #2":
+                    if diff.lower() == "medium" and random.randint(1,4) < 12:
+                        vowel_choice = random.choice(uv_puzzle)
+                        while vowel_choice in letters_chosen:
+                            vowel_choice = random.choice(['A','E','I','O','U'])
+                    elif diff.lower() == "hard" and random.randint(1,8) < 8:
+                        vowel_choice = random.choice(uv_puzzle)
+                        while vowel_choice in letters_chosen:
+                            vowel_choice = random.choice(['A','E','I','O','U'])
+                    elif diff.lower() == "easy" and random.randint(1,2) < 2:
+                        vowel_choice = random.choice(uv_puzzle)
+                        while vowel_choice in letters_chosen:
+                            vowel_choice = random.choice(['A','E','I','O','U'])
+                    else:
+                        vowel_choice = random.choice(['A','E','I','O','U'])
+                        while vowel_choice in letters_chosen:
+                            vowel_choice = random.choice(['A','E','I','O','U'])                       
+                    print("     Vowels cost $250. " + str(curr_name) + " chooses the letter " + vowel_choice + ".")
+                    time.sleep(2.5)
+                else:
+                    vowel_choice = inputErrorHandle("     Choose a vowel (costs $250): ",5)
                 vowel_choice = vowel_choice.upper()
                 letters_chosen.append(vowel_choice)
                 vowels_chosen.append(vowel_choice)
@@ -58263,9 +58426,23 @@ while not end_game:
                     print("\n\nCategory:", category + "\n")
                 time.sleep(3.5)
                     
-            elif p_action.lower() == "solve":
-                print(".\n.\nOkay, type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
-                solve_guess = input("      ")
+            elif p_action.lower() == "solve": 
+                if curr_name == "Computer #1" or curr_name == "Computer #2":
+                    print(".\n.\n" + str(curr_name) + " is attempting to solve the puzzle...\n.\n.")
+                    time.sleep(3.5)
+                    if diff.lower() == 'easy' and random.randint(1,4) == 1:
+                        solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                    elif diff.lower() == 'medium' and random.randint(1,8) == 1:
+                        solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                    elif diff.lower() == 'hard' and random.randint(1,16) == 1:
+                        solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                    else:
+                        solve_guess = puzzle
+                    print("           " + solve_guess)
+                    time.sleep(2.5)
+                else:
+                    print(".\n.\nOkay, type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
+                    solve_guess = input("      ")
                 print(".\n.")
                 if solve_guess.upper() == puzzle:
                     in_play = False
@@ -58311,8 +58488,7 @@ while not end_game:
                     print("\n\nCategory:", category + "\n")
                     time.sleep(3.5)
 
-
-            if status == True and p_action.lower() != "solve":
+            if status == True and p_action.lower() != "solve":  
                 in_play = False
                 print("\nYou have completed the puzzle, " + str(curr_name) + "! Congratulations!")
                 time.sleep(5.5)
@@ -58341,7 +58517,6 @@ while not end_game:
                 letters_chosen = []
                 consonants_chosen = []; vowels_chosen = []
                 if games == 5:
-                    input(" ")
                     inputErrorHandle("\nTime for our final toss-up, worth $3,000. Are you ready? ",11)  
                 print("\n-----------------------------------------------------------------------------------------\n")
 
@@ -58358,23 +58533,12 @@ while not end_game:
         in_play = True  # Continue gameplay until puzzle is solved
         print("-------------------------------")
         print("   Round " + str(games) + " (Toss-up, $3,000)")
-        print("-------------------------------\n")
+        print("-------------------------------")
         time.sleep(2.5)
         
-        # Obtain a random character and season, e.g. Kirk (Season 2)
-        # Get quotes and prepare format for Markovify
-        season = random.randint(1,3)
-        puz_markov = markovSeason(season)
-        character = puz_markov[0]
-        if character != "MCCOY":
-            character = character.title()
-        else:
-            character = "McCoy"
-        category = character + " (Season " + str(season) + ")"
-        print("The category of this puzzle is: " + category + "\n\n") 
-        puzzle = doMarkovify(puz_markov[1],25,50) # Markovify and display first board
-        time.sleep(2.5)
-        
+        # Markovify and display bank
+        puzzle = doMarkovify_1(24,46)
+        time.sleep(3.5)   
         displayBank(p1_name,p2_name,p3_name)
         time.sleep(3.5)
         
@@ -58385,7 +58549,7 @@ while not end_game:
                 u_puzzle.append(list(set(list(puzzle)))[u])
 
         print("\nOkay, players. Press Enter when you want to solve the puzzle. Go.\n\n")
-        time.sleep(2.5)
+        time.sleep(3.5)
         all_rev = False
         tossup_print = [] # List of strings that are displayed one after another with new letters
         rand_cons = "" # Randomly fill in the puzzle
@@ -58397,28 +58561,48 @@ while not end_game:
             tossup_print.append("     " + puzzleDisplay(puzzle,rand_cons,True))
         while in_play:
             if all_rev == False:
+                p_cnt = 0
                 for puzz in tossup_print:
                     print('\r' + str(puzz), end='')
-                    with pynput.keyboard.Listener(on_press=onPress) as ls:
-                          threading.Timer(1.1, ls.stop).start()
-                          ls.join()
-                          if tossup_solve == "yes":
-                              in_play = tossupSolve(puzzle,toss_ups,games-3,category)
-                              if in_play == False:
-                                  break
-                          tossup_solve = "no"
+                    if (p_cnt == len(tossup_print) - 5) and diff.lower() == "hard":
+                        in_play = tossupSolve(puzzle,toss_ups,games,category,"hard")
+                        if in_play == False:
+                            break
+                        tossup_solve = "no"
+                    elif (p_cnt == len(tossup_print) - 4) and diff.lower() == "medium":
+                        in_play = tossupSolve(puzzle,toss_ups,games,category,"medium")
+                        if in_play == False:
+                            break
+                        tossup_solve = "no"
+                    elif (p_cnt == len(tossup_print) - 3) and diff.lower() == "easy":
+                        in_play = tossupSolve(puzzle,toss_ups,games,category,"easy")
+                        if in_play == False:
+                            break
+                        tossup_solve = "no"
+                    else:
+                        with pynput.keyboard.Listener(on_press=onPress) as ls:
+                              threading.Timer(1.5, ls.stop).start()
+                              ls.join()
+                              if tossup_solve == "yes":
+                                  in_play = tossupSolve(puzzle,toss_ups,games,category,"")
+                                  if in_play == False:
+                                      break
+                              tossup_solve = "no"
+                    p_cnt = p_cnt + 1
             all_rev = True
-            if all_rev == True and in_play == True:
+            if diff.lower() != "" and all_rev == True and in_play == True:
+               in_play = tossupSolve(puzzle,toss_ups,games,category,"hard")
+               tossup_solve = "no"
+            elif all_rev == True and in_play == True:
                 print('\r' + str(puzz), end='')
                 with pynput.keyboard.Listener(on_press=onPress) as ls:
                     ls.join()
                 if tossup_solve == "yes":
-                    in_play = tossupSolve(puzzle,toss_ups,games-3,category)
+                    in_play = tossupSolve(puzzle,toss_ups,games,category,"")
                     tossup_solve = "no"
         letters_chosen = []
         consonants_chosen = []; vowels_chosen = []
         if games == 6:
-            input(" ")
             print("\nFinal round coming up. This is for all the marbles. Good luck to all.\n")
             time.sleep(2.5)
         print("-----------------------------------------------------------------------------------------\n")
@@ -58430,35 +58614,30 @@ while not end_game:
     winner = ""
     solve_final = ""
     flush = False
+    solve_time = False
     for games in range(7,8): 
         print("--------------------------------")
         print("          Final Round:          ")
-        print("--------------------------------\n")
-        time.sleep(2.5)
-        
-        # Obtain a random character and season, e.g. Kirk (Season 2)
-        # Get quotes and prepare format for Markovify
-        season = random.randint(1,3)
-        puz_markov = markovSeason(season)
-        character = puz_markov[0]
-        if character != "MCCOY":
-            character = character.title()
-        else:
-            character = "McCoy"
-        category = character + " (Season " + str(season) + ")"
-        print("The category of this puzzle is: " + category + "\n\n") 
-        puzzle = doMarkovify(puz_markov[1],25,50) # Markovify and display first board
+        print("--------------------------------")
         time.sleep(2.5)
 
-        print("\n")
+        # Markovify and display bank
+        puzzle = doMarkovify_1(25,56)
+        time.sleep(3.5)
         displayBank(p1_name,p2_name,p3_name)
         time.sleep(3.5)
         
         u_puzzle = []
+        uc_puzzle = []
+        uv_puzzle = []
         # Get unique LETTERS in puzzle
         for u in range(len(set(list(puzzle)))):
             if list(set(list(puzzle)))[u] in all_letters:
                 u_puzzle.append(list(set(list(puzzle)))[u])
+                if list(set(list(puzzle)))[u] in ['A','E','I','O','U']:
+                    uv_puzzle.append(list(set(list(puzzle)))[u])
+                else:
+                    uc_puzzle.append(list(set(list(puzzle)))[u])
                              
         print("For this round, I'll give the wheel a final spin. Consonants will be worth $1,000 plus what the wheel lands on.")
         time.sleep(5.5)
@@ -58520,48 +58699,179 @@ while not end_game:
             else:
                 print("---------------------\n")
                 
-            if turns == 1:
+            if curr_name == "Computer #1" or curr_name == "Computer #2":
+                if turns == 1:
+                    print(str(curr_name) + " has the least amount of money and is playing first...")
+                else:
+                    print(str(curr_name) + " is playing...")
+                time.sleep(2.5)
+                if curr_name == "Computer #1" or curr_name == "Computer #2":
+                    if all(elem in consonants_chosen for elem in uc_puzzle) and all(elem in vowels_chosen for elem in uv_puzzle):
+                        solve_time = True
+                        print(".\n.\n      " + str(curr_name) + " must solve.")
+                        solve_final = "solve"
+                    else:
+                        if diff.lower() == "medium" and random.randint(1,3) < 3:
+                            letter_choice = random.choice(u_puzzle)
+                            while letter_choice in letters_chosen:
+                                if random.randint(1,3) < 3:
+                                    letter_choice = random.choice(u_puzzle)
+                                else:
+                                    letter_choice = random.choice(all_letters)
+                        elif diff.lower() == "hard" and random.randint(1,4) < 4:
+                            letter_choice = random.choice(u_puzzle)
+                            while letter_choice in letters_chosen:
+                                if random.randint(1,4) < 4:
+                                    letter_choice = random.choice(u_puzzle)
+                                else:
+                                    letter_choice = random.choice(all_letters)
+                        elif diff.lower() == "easy" and random.randint(1,2) < 2:
+                            letter_choice = random.choice(u_puzzle)   
+                            while letter_choice in letters_chosen:
+                                if random.randint(1,2) < 2:
+                                    letter_choice = random.choice(u_puzzle)
+                                else:
+                                    letter_choice = random.choice(all_letters)
+                        else:
+                            letter_choice = random.choice(all_letters)   
+                            while letter_choice in letters_chosen:
+                                letter_choice = random.choice(all_letters)
+                        print(".\n.\n      " + str(curr_name) + " chooses the letter " + letter_choice + ".")
+                    time.sleep(2.5)
+            elif turns == 1:
                 letter_choice = inputErrorHandle(str(curr_name) + ", you have the least amount of money. You may pick a letter first. ",10)
+            elif all(elem in consonants_chosen for elem in uc_puzzle) and all(elem in vowels_chosen for elem in uv_puzzle):
+                solve_time = True
+                host_text = str(curr_name) + ", you must attempt to solve the puzzle (type 'Solve'). "
+                letter_choice = inputErrorHandle(host_text,8)
+                solve_final = "solve"
+            elif all(elem in consonants_chosen for elem in uc_puzzle):
+                host_text = str(curr_name) + ", all consonants have been chosen. You must pick a vowel. "
+                letter_choice = inputErrorHandle(host_text,5)
+            elif all(elem in vowels_chosen for elem in uv_puzzle):
+                host_text = str(curr_name) + ", all vowels have been chosen. You must pick a consonant. "
+                letter_choice = inputErrorHandle(host_text,4)
             else:
-                letter_choice = inputErrorHandle(str(curr_name) + ", you may pick a letter now. ",10)
+                if status == False:
+                    letter_choice = inputErrorHandle(str(curr_name) + ", you may pick a letter now. ",10)
+                else:
+                    letter_choice = letter_choice[0]
+                    solve_final = "solve"
+                
             letter_choice = letter_choice.upper()
             letters_chosen.append(letter_choice)
-            if letter_choice in puzzle:
-                print("\n\n")
-                status = puzzleDisplay(puzzle,letter_choice,flush)
-                if status == True:
+            if letter_choice in ['A','E','I','O','U']:
+                vowels_chosen.append(letter_choice)
+            else:
+                consonants_chosen.append(letter_choice)
+                
+            if letter_choice in puzzle or solve_time: 
+                if status == True and solve_time == False:
                     if puzzle.count(letter_choice) == 1:
                         if letter_choice in ['A','E','I','O','U']:
-                            solve_final = inputErrorHandle("\n.\n.\nYes, there is " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + ". No money for vowels. Now type 'Solve'! ",12)
+                            print(".\n.\nYes, there is " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + ". No money for vowels.\n\n")
+                            status = puzzleDisplay(puzzle,letter_choice,flush)
+                            print("\n\n\n" + "Category:", category + "\n")
+                            time.sleep(3.5)
+                            if curr_name != "Computer #1" and curr_name != "Computer #2":
+                                solve_final = inputErrorHandle(".\n.\nNow type 'Solve'! ",12)
                         else:
                             curr_bank = curr_bank + (curr_prize+1000)*puzzle.count(letter_choice)
                             updateTempBank(player_turn,(curr_prize+1000)*puzzle.count(letter_choice),1)
-                            solve_final = inputErrorHandle("\n.\n.\nYes, there is " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + ", worth $" + str("{:,}".format((curr_prize+1000)*puzzle.count(letter_choice))) + ". Now type 'Solve'! ",12)  
+                            print(".\n.\nYes, there is " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + ", worth $" + str("{:,}".format((curr_prize+1000)*puzzle.count(letter_choice))) + ".\n\n")
+                            status = puzzleDisplay(puzzle,letter_choice,flush)
+                            print("\n\n\n" + "Category:", category + "\n")
+                            time.sleep(3.5)
+                            if curr_name != "Computer #1" and curr_name != "Computer #2":
+                                solve_final = inputErrorHandle(".\n.\nNow type 'Solve'! ",12)  
                     elif puzzle.count(letter_choice) != 1:
                         if letter_choice in ['A','E','I','O','U']:
-                            solve_final = inputErrorHandle("\n.\n.\nYes, there are " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + "'s. No money for vowels. Now type 'Solve'! ",12)
+                            print(".\n.\nYes, there are " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + "'s. No money for vowels.\n\n")
+                            status = puzzleDisplay(puzzle,letter_choice,flush)
+                            print("\n\n\n" + "Category:", category + "\n")
+                            time.sleep(3.5)
+                            if curr_name != "Computer #1" and curr_name != "Computer #2":
+                                solve_final = inputErrorHandle(".\n.\nNow type 'Solve'! ",12)
                         else:
                             curr_bank = curr_bank + (curr_prize+1000)*puzzle.count(letter_choice)
                             updateTempBank(player_turn,(curr_prize+1000)*puzzle.count(letter_choice),1)
-                            solve_final = inputErrorHandle("\n.\n.\nYes, there are " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + "'s, worth $" + str("{:,}".format((curr_prize+1000)*puzzle.count(letter_choice))) + ". Now type 'Solve'! ",12)  
+                            print(".\n.\nYes, there are " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + "'s, worth $" + str("{:,}".format((curr_prize+1000)*puzzle.count(letter_choice))) + ".\n\n")
+                            status = puzzleDisplay(puzzle,letter_choice,flush)
+                            print("\n\n\n" + "Category:", category + "\n")
+                            time.sleep(3.5)
+                            if curr_name != "Computer #1" and curr_name != "Computer #2":
+                                solve_final = inputErrorHandle(".\n.\nNow type 'Solve'! ",12)
                     solve_final = "solve"
-                elif puzzle.count(letter_choice) == 1:
+                elif puzzle.count(letter_choice) == 1 and solve_time == False:
+                    if curr_name == "Computer #1" or curr_name == "Computer #2":
+                        if diff.lower() == 'easy' and turns >= 13 and random.randint(1,max(19-turns-math.floor(80/len(puzzle)))) == 1:
+                            solve_final = 'solve'
+                        elif diff.lower() == 'medium' and turns >= 11 and random.randint(1,max(17-turns-math.floor(80/len(puzzle)))) == 1:
+                            solve_final = 'solve'
+                        elif diff.lower() == 'hard' and turns >= 9 and random.randint(1,max(15-turns-math.floor(80/len(puzzle)))) == 1:
+                            solve_final = 'solve'
+                        else:
+                            solve_final = 'skip'
                     if letter_choice in ['A','E','I','O','U']:
-                        solve_final = inputErrorHandle("\n.\n.\nYes, there is " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + ". No money for vowels. Type 'Solve' to solve or 'Skip' to skip. ",12)
+                        print(".\n.\nYes, there is " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + ". No money for vowels.\n\n")
+                        status = puzzleDisplay(puzzle,letter_choice,flush)
+                        print("\n\n\n" + "Category:", category + "\n")
+                        time.sleep(3.5)
+                        if curr_name != "Computer #1" and curr_name != "Computer #2":
+                            solve_final = inputErrorHandle(".\n.\nNow type 'Solve' or 'Skip'. ",12)
                     else:
                         curr_bank = curr_bank + (curr_prize+1000)*puzzle.count(letter_choice)
                         updateTempBank(player_turn,(curr_prize+1000)*puzzle.count(letter_choice),1)
-                        solve_final = inputErrorHandle("\n.\n.\nYes, there is " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + ", worth $" + str("{:,}".format((curr_prize+1000)*puzzle.count(letter_choice))) + ". Type 'Solve' to solve or 'Skip' to skip. ",12)  
-                elif puzzle.count(letter_choice) != 1:
+                        print(".\n.\nYes, there is " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + ", worth $" + str("{:,}".format((curr_prize+1000)*puzzle.count(letter_choice))) + ".\n\n")
+                        status = puzzleDisplay(puzzle,letter_choice,flush)
+                        print("\n\n\n" + "Category:", category + "\n")
+                        time.sleep(3.5)
+                        if curr_name != "Computer #1" and curr_name != "Computer #2":
+                            solve_final = inputErrorHandle(".\n.\nNow type 'Solve' or 'Skip'. ",12)
+                elif puzzle.count(letter_choice) != 1 and solve_time == False:
+                    if curr_name == "Computer #1" or curr_name == "Computer #2":
+                        if diff.lower() == 'easy' and turns >= 13 and random.randint(1,max(19-turns-math.floor(80/len(puzzle)),1)) == 1:
+                            solve_final = 'solve'
+                        elif diff.lower() == 'medium' and turns >= 11 and random.randint(1,max(17-turns-math.floor(80/len(puzzle)),1)) == 1:
+                            solve_final = 'solve'
+                        elif diff.lower() == 'hard' and turns >= 9 and random.randint(1,max(15-turns-math.floor(80/len(puzzle)),1)) == 1:
+                            solve_final = 'solve'
+                        else:
+                            solve_final = 'skip'
                     if letter_choice in ['A','E','I','O','U']:
-                        solve_final = inputErrorHandle("\n.\n.\nYes, there are " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + "'s. No money for vowels. Type 'Solve' to solve or 'Skip' to skip. ",12)
+                        print(".\n.\nYes, there are " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + "'s. No money for vowels.\n\n")
+                        status = puzzleDisplay(puzzle,letter_choice,flush)
+                        print("\n\n\n" + "Category:", category + "\n")
+                        time.sleep(3.5)
+                        if curr_name != "Computer #1" and curr_name != "Computer #2":
+                            solve_final = inputErrorHandle(".\n.\nNow type ''Solve' or 'Skip'. ",12)
                     else:
                         curr_bank = curr_bank + (curr_prize+1000)*puzzle.count(letter_choice)
                         updateTempBank(player_turn,(curr_prize+1000)*puzzle.count(letter_choice),1)
-                        solve_final = inputErrorHandle("\n.\n.\nYes, there are " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + "'s, worth $" + str("{:,}".format((curr_prize+1000)*puzzle.count(letter_choice))) + ". Type 'Solve' to solve or 'Skip' to skip. ",12)  
+                        print(".\n.\nYes, there are " + str(puzzle.count(letter_choice)) + " " + str(letter_choice) + "'s, worth $" + str("{:,}".format((curr_prize+1000)*puzzle.count(letter_choice))) + ".\n\n")
+                        status = puzzleDisplay(puzzle,letter_choice,flush)
+                        print("\n\n\n" + "Category:", category + "\n")
+                        time.sleep(3.5)
+                        if curr_name != "Computer #1" and curr_name != "Computer #2":
+                            solve_final = inputErrorHandle(".\n.\nNow type 'Solve' or 'Skip'. ",12)
+                        
                 if solve_final.lower() == "solve":
-                    print("\n.\n.\nOkay, type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
-                    solve_guess = input("      ")
+                    if curr_name == "Computer #1" or curr_name == "Computer #2":
+                        print(".\n.\n" + str(curr_name) + " is attempting to solve the puzzle...\n.\n.")
+                        time.sleep(3.5)
+                        if diff.lower() == 'easy' and random.randint(1,4) == 1:
+                            solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                        elif diff.lower() == 'medium' and random.randint(1,8) == 1:
+                            solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                        elif diff.lower() == 'hard' and random.randint(1,16) == 1:
+                            solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                        else:
+                            solve_guess = puzzle
+                        print("           " + solve_guess)
+                        time.sleep(2.5)
+                    else:
+                        print("\n.\n.\nOkay, type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
+                        solve_guess = input("      ")
                     print(".\n.")
                     if solve_guess.upper() == puzzle:
                         in_play = False
@@ -58571,7 +58881,7 @@ while not end_game:
                         print("\n\nCategory:", category + "\n")
                         time.sleep(5.5)
                         print(".\n.")
-                        episodeCheck(puzzle,category)      
+                        episodeCheck(puzzle,category)
                         if curr_bank < 1000:
                             updateBank(player_turn,1000)
                             print(".\n.\n" + curr_name + ", your winnings that round were $1,000! That is our house minimum.")         
@@ -58641,10 +58951,13 @@ while not end_game:
     for games in range(8,9):
         print("--------------------------------")
         print("          BONUS ROUND:          ")
-        print("--------------------------------\n")
+        print("--------------------------------")
         time.sleep(2.5)
-        input(" ")
-        inputErrorHandle("\nFirst, spin the bonus wheel for your potential final prize. ",3)
+        if winner == "Computer #1" or winner == "Computer #2":
+            print("\n" + winner + " will play the bonus round now. Sit back and enjoy (or turn away in dismay).")
+            time.sleep(4.5)
+        else:
+            inputErrorHandle("\nFirst, spin the bonus wheel for your potential final prize. ",3)
         print(".")
         time.sleep(0.15)
         print(".")
@@ -58668,30 +58981,26 @@ while not end_game:
         print("Okay, good luck, " + winner + "!")
         time.sleep(3.5)
         
-        # Obtain a random character and season, e.g. Kirk (Season 2)
-        # Get quotes and prepare format for Markovify
-        season = random.randint(1,3)
-        puz_markov = markovSeason(season)
-        character = puz_markov[0]
-        if character != "MCCOY":
-            character = character.title()
-        else:
-            character = "McCoy"
-        category = character + " (Season " + str(season) + ")"
-        print("\n\nThe category of your bonus puzzle is: " + category + "\n\n") 
-        puzzle = doMarkovify(puz_markov[1],16,35) # Markovify and display first board
-        time.sleep(4.5)
-        
+        # Markovify bonus round
+        puzzle = doMarkovify_1(25,56)
+        time.sleep(3.5)
+
         u_puzzle = []
+        uc_puzzle = []
+        uv_puzzle = []
         # Get unique LETTERS in puzzle
         for u in range(len(set(list(puzzle)))):
             if list(set(list(puzzle)))[u] in all_letters:
                 u_puzzle.append(list(set(list(puzzle)))[u])
-                
+                if list(set(list(puzzle)))[u] in ['A','E','I','O','U']:
+                    uv_puzzle.append(list(set(list(puzzle)))[u])
+                else:
+                    uc_puzzle.append(list(set(list(puzzle)))[u])
+                        
         tossup_print = []        
         rstlne = ['R','S','T','L','N','E']
         print(".\n.\nLet's reveal R, S, T, L, N, and E.\n\n")
-        time.sleep(2.5)
+        time.sleep(3.5)
         for l in rstlne:
             letters_chosen.append(l)
             consonants_chosen.append(l)
@@ -58703,25 +59012,76 @@ while not end_game:
         for puzz in tossup_print:
             print('\r' + str(puzz), end='')
             with pynput.keyboard.Listener(on_press=onPress) as ls:
-                threading.Timer(1.1, ls.stop).start()
+                threading.Timer(1.5, ls.stop).start()
                 ls.join()
                 
         time.sleep(2.5)
         print("\n\n")
-        c1 = inputErrorHandle("Now, I need you to pick 3 more consonants and a vowel. Consonant #1? ",4)
-        consonants_chosen.append(c1.upper())
-        letters_chosen.append(c1.upper())
-        c2 = inputErrorHandle("Consonant #2? ",4)
-        consonants_chosen.append(c2.upper())
-        letters_chosen.append(c2.upper())
-        c3 = inputErrorHandle("Consonant #3? ",4)
-        consonants_chosen.append(c3.upper())
-        letters_chosen.append(c3.upper())
-        v1 = inputErrorHandle("And your vowel? ",5)
-        vowels_chosen.append(v1.upper())
-        letters_chosen.append(v1.upper())
+        new_picks = ["","","",""]
+        if winner != "Computer #1" and winner != "Computer #2":   
+            c1 = inputErrorHandle("Now, I need you to pick 3 more consonants and a vowel. Type them one at a time. Consonant #1? ",4)
+            consonants_chosen.append(c1.upper())
+            letters_chosen.append(c1.upper())
+            c2 = inputErrorHandle("Consonant #2? ",4)
+            consonants_chosen.append(c2.upper())
+            letters_chosen.append(c2.upper())
+            c3 = inputErrorHandle("Consonant #3? ",4)
+            consonants_chosen.append(c3.upper())
+            letters_chosen.append(c3.upper())
+            v1 = inputErrorHandle("And your vowel? ",5)
+            vowels_chosen.append(v1.upper())
+            letters_chosen.append(v1.upper())
         
-        new_picks = [c1.upper(), c2.upper(), c3.upper(), v1.upper()]
+            new_picks = [c1.upper(), c2.upper(), c3.upper(), v1.upper()]
+        else:
+            print("Now, I need you to pick 3 more consonants and a vowel.")
+            time.sleep(3.5)
+            for n in range(3):
+                if diff.lower() == "medium" and random.randint(1,3) < 3:
+                    new_picks[n] = random.choice(uc_puzzle)
+                    while new_picks[n] in letters_chosen or new_picks[n] in ['A','E','I','O','U']:
+                        if random.randint(1,3) < 3:
+                            new_picks[n] = random.choice(uc_puzzle)
+                        else:
+                            new_picks[n] = random.choice(all_letters)
+                elif diff.lower() == "hard" and random.randint(1,4) < 4:
+                    new_picks[n] = random.choice(uc_puzzle)
+                    while new_picks[n] in letters_chosen or new_picks[n] in ['A','E','I','O','U']:
+                        if random.randint(1,4) < 4:
+                            new_picks[n] = random.choice(uc_puzzle)
+                        else:
+                            new_picks[n] = random.choice(all_letters)
+                elif diff.lower() == "easy" and random.randint(1,2) < 2:
+                    new_picks[n] = random.choice(uc_puzzle) 
+                    while new_picks[n] in letters_chosen or new_picks[n] in ['A','E','I','O','U']:
+                        if random.randint(1,2) < 2:
+                            new_picks[n] = random.choice(uc_puzzle)
+                        else:
+                            new_picks[n] = random.choice(all_letters)
+                else:
+                    new_picks[n] = random.choice(all_letters)   
+                    while new_picks[n] in letters_chosen or new_picks[n] in ['A','E','I','O','U']:
+                        new_picks[n] = random.choice(all_letters)
+                new_picks[n] = new_picks[n].upper()
+                        
+            if diff.lower() == "medium" and random.randint(1,3) < 3:
+                new_picks[3] = random.choice(uv_puzzle)
+                while new_picks[3] in letters_chosen:
+                    new_picks[3] = random.choice(['A','E','I','O','U'])
+            elif diff.lower() == "hard" and random.randint(1,4) < 4:
+                new_picks[3] = random.choice(uv_puzzle)
+                while new_picks[3] in letters_chosen:
+                    new_picks[3] = random.choice(['A','E','I','O','U'])
+            elif diff.lower() == "easy" and random.randint(1,2) < 2:
+                new_picks[3] = random.choice(uv_puzzle)
+                while new_picks[3] in letters_chosen:
+                    new_picks[3] = random.choice(['A','E','I','O','U'])
+            else:
+                new_picks[3] = random.choice(['A','E','I','O','U']) 
+                while new_picks[3] in letters_chosen:
+                    new_picks[3] = random.choice(all_letters)
+            new_picks[3] = new_picks[3].upper()
+
         print(".\n.\n" + winner + ", you selected " + new_picks[0] + ", " + new_picks[1] + ", " + new_picks[2] + ", and " + new_picks[3] +".")
         time.sleep(2.5)
         print(".\n.\nLet's reveal these letters in the puzzle...\n\n")
@@ -58732,20 +59092,52 @@ while not end_game:
             consonants_chosen.append(ll)
             if ll in puzzle:
                 tossup_print.append("     " + puzzleDisplay(puzzle,ll,True))
-        consonants_chosen.remove(v1.upper())
-        vowels_chosen.append(v1.upper())
+        consonants_chosen.remove(new_picks[3])
+        vowels_chosen.append(new_picks[3])
 
         for puzz in tossup_print:
             print('\r' + str(puzz), end='')
             with pynput.keyboard.Listener(on_press=onPress) as ls:
-                threading.Timer(1.1, ls.stop).start()
+                threading.Timer(1.5, ls.stop).start()
                 ls.join()
                 
         time.sleep(2.5)
         print("\n\n\nRemember, the category is: " + category + ".")
         time.sleep(2.5)
-        bonus_solve = inputErrorHandle(".\n.\nCan you figure it out? Type 'Solve' to solve or 'Skip' to forfeit your chance. ",12)
+        if winner != "Computer #1" and winner != "Computer #2":
+            bonus_solve = inputErrorHandle(".\n.\nCan you figure it out? Type 'Solve' to solve or 'Skip' to forfeit your chance. ",12)
+        else:
+            if diff.lower() == 'easy':
+                if puzz.count("_")/len(puzzle) <= 0.15:
+                    bonus_solve = 'solve'
+                else:
+                    bonus_solve = 'skip'
+            elif diff.lower() == 'medium':
+                if puzz.count("_")/len(puzzle) <= 0.30:
+                    bonus_solve = 'solve'
+                else:
+                    bonus_solve = 'skip'
+            elif diff.lower() == 'hard':
+                if puzz.count("_")/len(puzzle) <= 0.45:
+                    bonus_solve = 'solve'
+                else:
+                    bonus_solve = 'skip'
+            else:
+                bonus_solve = random.choice(['solve','skip'])
         if bonus_solve.lower() == 'solve':
+            if winner == "Computer #1" or winner == "Computer #2":
+                print(".\n.\n" + str(winner) + " is attempting to solve the puzzle...\n.\n.")
+                time.sleep(3.5)
+                if diff.lower() == 'easy' and random.randint(1,2) == 1:
+                    solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                elif diff.lower() == 'medium' and random.randint(1,4) == 1:
+                    solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                elif diff.lower() == 'hard' and random.randint(1,8) == 1:
+                    solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
+                else:
+                    solve_guess = puzzle
+                print("           " + solve_guess)
+                time.sleep(2.5)
             print(".\n.\nOkay, type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
             solve_guess = input("      ")
             print(".\n.")
@@ -58782,8 +59174,11 @@ while not end_game:
                 print(".\n.\nNo worries, you still leave here with $" + str("{:,}".format(curr_bank)) + "! Thanks for playing, " + winner + ".")
                 time.sleep(4.5)
         else:
-            print(".\n.\nAw shucks, you couldn't figure it out? Here's what the puzzle was:\n\n")
-            time.sleep(3.5)
+            if winner != "Computer #1" and winner != "Computer #2":
+                print(".\n.\nAw shucks, you couldn't figure it out? Here's what the puzzle was:\n\n")
+            else:
+                print(".\n.\nThe computer couldn't figure it out! Here's what the puzzle was:\n\n")
+            time.sleep(4.5)
             in_play = False
             letters_chosen = all_letters
             status = puzzleDisplay(puzzle,"",flush)
@@ -58800,14 +59195,13 @@ while not end_game:
             
     winnings.append(str("$" + str("{:,}".format(curr_bank))))
     p_winner.append(winner)
-    print("\nSummary:")
-    print("------------------------------------------")
+    print("\n\nSummary:")
+    print("-----------------------------------------------")
     for w in range(1,len(winnings)+1):
         print("Game " + str(w) + ": " + p_winner[w-1] + " won " + winnings[w-1])
-    print("------------------------------------------\n")
+    print("-----------------------------------------------\n")
     time.sleep(2.5)
-    input(" ")
-    play_again = inputErrorHandle("Play again? ",11)
+    play_again = inputErrorHandle("Play again? ",13)
     if play_again.lower() == "no":
         end_game = True
         print("Goodbye!")
