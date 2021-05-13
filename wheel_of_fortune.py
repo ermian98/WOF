@@ -58083,7 +58083,7 @@ while not end_game:
                         tossup_solve = "no"
                     else:
                         with pynput.keyboard.Listener(on_press=onPress) as ls:
-                              threading.Timer(1.5, ls.stop).start()
+                              threading.Timer(1.4, ls.stop).start()
                               ls.join()
                               if tossup_solve == "yes":
                                   in_play = tossupSolve(puzzle,toss_ups,games,category,"")
@@ -58581,7 +58581,7 @@ while not end_game:
                         tossup_solve = "no"
                     else:
                         with pynput.keyboard.Listener(on_press=onPress) as ls:
-                              threading.Timer(1.5, ls.stop).start()
+                              threading.Timer(1.4, ls.stop).start()
                               ls.join()
                               if tossup_solve == "yes":
                                   in_play = tossupSolve(puzzle,toss_ups,3,category,"")
@@ -59012,7 +59012,7 @@ while not end_game:
         for puzz in tossup_print:
             print('\r' + str(puzz), end='')
             with pynput.keyboard.Listener(on_press=onPress) as ls:
-                threading.Timer(1.5, ls.stop).start()
+                threading.Timer(1.4, ls.stop).start()
                 ls.join()
                 
         time.sleep(2.5)
@@ -59098,7 +59098,7 @@ while not end_game:
         for puzz in tossup_print:
             print('\r' + str(puzz), end='')
             with pynput.keyboard.Listener(on_press=onPress) as ls:
-                threading.Timer(1.5, ls.stop).start()
+                threading.Timer(1.4, ls.stop).start()
                 ls.join()
                 
         time.sleep(2.5)
@@ -59138,8 +59138,9 @@ while not end_game:
                     solve_guess = puzzle
                 print("           " + solve_guess)
                 time.sleep(2.5)
-            print(".\n.\nOkay, type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
-            solve_guess = input("      ")
+            else:
+                print(".\n.\nOkay, type the answer below. Check spelling, spaces, and punctuation. Lowercase/uppercase letters allowed.\n.\n.")
+                solve_guess = input("      ")
             print(".\n.")
             if solve_guess.upper() == puzzle:
                 in_play = False
