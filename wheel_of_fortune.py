@@ -58178,9 +58178,9 @@ while not end_game:
                 if len(consonants_chosen) == 21 and (curr_bank < 250 or len(vowels_chosen) == 5):
                     p_action = 'solve'
                 elif (all(elem in consonants_chosen for elem in uc_puzzle)) and len(vowels_chosen) != 5:
-                    p_action = random.choice(['vowel','spin','solve'])
+                    p_action = random.choice(['vowel','solve','solve'])
                 elif all(elem in vowels_chosen for elem in uv_puzzle) and (len(consonants_chosen) + adj_d >= len(uc_puzzle)) and curr_bank < 250:
-                    p_action = random.choice(['spin','spin','solve'])
+                    p_action = random.choice(['spin','solve'])
                 elif (len(consonants_chosen) + adj_d >= len(uc_puzzle)) and curr_bank >= 250 and len(vowels_chosen) != 5:
                     p_action = random.choice(['spin','spin','vowel','vowel','solve','solve'])
                 elif (len(consonants_chosen) + adj_d < len(uc_puzzle)) and curr_bank >= 250 and len(vowels_chosen) != 5:
@@ -58502,7 +58502,7 @@ while not end_game:
                     mil_lock = True
                     time.sleep(2.5)
                 elif (p1_m == " [M]" or p2_m == " [M]" or p3_m == " [M]") and curr_mil == "" and mil_lock == False:
-                    print(".\n.\nThe $1,000,000 wedge will be reset.\n\n")
+                    print(".\n.\nThe $1,000,000 wedge will be reset.")
                     p1_m = "" ; p2_m = "" ; p3_m = ""
                     wheel_R1_3.append(1000000)
                 print(".\n.\n" + str(curr_name) + ", that brings your game total to $" + str("{:,}".format(getBank(player_turn))) + ".\n")
