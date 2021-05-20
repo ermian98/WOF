@@ -1,6 +1,6 @@
 # Wheel of Fortune #
 # Eric Anderson #
-# May 15th, 2021 #
+# May 20th, 2021 #
 
 import math
 import time
@@ -57940,7 +57940,7 @@ def updateTempBank(p_num,c_bank,flag):
 # Begin main program
 
 print("Eric Anderson")
-print("May 15th, 2021\n")
+print("May 20th, 2021\n")
 
 winnings = [] # Should the players play more than once, this stores their winnings by game...
 p_winner = [] # ... and the victor's name
@@ -58012,7 +58012,7 @@ while not end_game:
     
     inputErrorHandle(".\n.\nBuckle up, this'll be interesting. Are you ready? ",11)
     print(".\n.\nFantastic! Let's start off with two toss-up rounds, worth $1,000 and $2,000.")
-    time.sleep(4.5)
+    time.sleep(5.5)
     print(".\n.\n\n-----------------------------------------------------------------------------------------\n")
 
 
@@ -58029,14 +58029,14 @@ while not end_game:
         print("--------------------------------")
         print("   Round " + str(games) + ": (Toss-up, " + str(toss_ups[games-1]) + ")")
         print("--------------------------------")
-        time.sleep(1.5)
+        time.sleep(2.5)
         
         # Markovify and display first board
         puzzle = doMarkovify_1(24,46)
         
         # Display bank for each player/computer
         displayBank(p1_name,p2_name,p3_name)
-        time.sleep(3.5)
+        time.sleep(5.5)
         
         u_puzzle = []
         # Get unique LETTERS in puzzle
@@ -58044,8 +58044,8 @@ while not end_game:
             if list(set(list(puzzle)))[u] in all_letters:
                 u_puzzle.append(list(set(list(puzzle)))[u])
         
-        print("\nOkay, players. Press Enter when you want to solve the puzzle. Go.\n\n")
-        time.sleep(2.5)
+        print("\nOkay, players. The puzzle will appear in a moment. Press Enter when you want to solve. \n\n")
+        time.sleep(5.5)
         all_rev = False
         tossup_print = [] # List of strings that are displayed one after another with new letters
         rand_cons = "" # Randomly fill in the puzzle
@@ -58077,7 +58077,7 @@ while not end_game:
                         tossup_solve = "no"
                     else:
                         with pynput.keyboard.Listener(on_press=onPress) as ls:
-                              threading.Timer(1.4, ls.stop).start()
+                              threading.Timer(2.0, ls.stop).start()
                               ls.join()
                               if tossup_solve == "yes":
                                   in_play = tossupSolve(puzzle,toss_ups,games,category,"")
@@ -58087,8 +58087,9 @@ while not end_game:
                     p_cnt = p_cnt + 1
             all_rev = True
             if diff.lower() != "" and all_rev == True and in_play == True:
-               in_play = tossupSolve(puzzle,toss_ups,games,category,"hard")
-               tossup_solve = "no"
+                time.sleep(1.0)
+                in_play = tossupSolve(puzzle,toss_ups,games,category,"hard")
+                tossup_solve = "no"
             elif all_rev == True and in_play == True:
                 print('\r' + str(puzz), end='')
                 with pynput.keyboard.Listener(on_press=onPress) as ls:
@@ -58117,11 +58118,11 @@ while not end_game:
         print("----------------------")
         print("      Round " + str(games) + ":")
         print("----------------------")
-        time.sleep(1.5)
+        time.sleep(2.5)
         
         # Markovify and display first board
         puzzle = doMarkovify_1(34,68)
-        time.sleep(3.5)
+        time.sleep(4.5)
 
         # Which player's turn? (player with least amount of money)
         banks = [p1_bank,p2_bank,p3_bank]
@@ -58174,7 +58175,7 @@ while not end_game:
                     print(str(curr_name) + " is playing first...")
                 else:
                     print(str(curr_name) + " is playing...")
-                time.sleep(1.5)
+                time.sleep(2.5)
                 if len(consonants_chosen) == 21 and (curr_bank < 250 or len(vowels_chosen) == 5):
                     p_action = 'solve'
                 elif (all(elem in consonants_chosen for elem in uc_puzzle)) and len(vowels_chosen) != 5:
@@ -58530,12 +58531,12 @@ while not end_game:
         print("-------------------------------")
         print("   Round " + str(games) + " (Toss-up, $3,000)")
         print("-------------------------------")
-        time.sleep(1.5)
+        time.sleep(2.5)
         
         # Markovify and display bank
         puzzle = doMarkovify_1(24,46) 
         displayBank(p1_name,p2_name,p3_name)
-        time.sleep(3.5)
+        time.sleep(5.5)
         
         u_puzzle = []
         # Get unique LETTERS in puzzle
@@ -58543,8 +58544,8 @@ while not end_game:
             if list(set(list(puzzle)))[u] in all_letters:
                 u_puzzle.append(list(set(list(puzzle)))[u])
 
-        print("\nOkay, players. Press Enter when you want to solve the puzzle. Go.\n\n")
-        time.sleep(2.5)
+        print("\nOkay, players. The puzzle will appear in a moment. Press Enter when you want to solve. \n\n")
+        time.sleep(5.5)
         all_rev = False
         tossup_print = [] # List of strings that are displayed one after another with new letters
         rand_cons = "" # Randomly fill in the puzzle
@@ -58576,7 +58577,7 @@ while not end_game:
                         tossup_solve = "no"
                     else:
                         with pynput.keyboard.Listener(on_press=onPress) as ls:
-                              threading.Timer(1.4, ls.stop).start()
+                              threading.Timer(2.0, ls.stop).start()
                               ls.join()
                               if tossup_solve == "yes":
                                   in_play = tossupSolve(puzzle,toss_ups,3,category,"")
@@ -58599,7 +58600,7 @@ while not end_game:
         consonants_chosen = []; vowels_chosen = []
         if games == 6:
             print("\nFinal round coming up. This is for all the marbles. Good luck to all.\n")
-            time.sleep(2.5)
+            time.sleep(5.5)
         print("-----------------------------------------------------------------------------------------\n")
         in_play = True
         all_rev = False
@@ -58614,13 +58615,13 @@ while not end_game:
         print("--------------------------------")
         print("          Final Round:          ")
         print("--------------------------------")
-        time.sleep(1.5)
+        time.sleep(2.5)
 
         # Markovify and display bank
         puzzle = doMarkovify_1(25,56)
         time.sleep(3.5)
         displayBank(p1_name,p2_name,p3_name)
-        time.sleep(3.5)
+        time.sleep(5.5)
         
         u_puzzle = []
         uc_puzzle = []
@@ -58635,9 +58636,9 @@ while not end_game:
                     uc_puzzle.append(list(set(list(puzzle)))[u])
                              
         print("For this round, I'll give the wheel a final spin. Consonants will be worth $1,000 plus what the wheel lands on.")
-        time.sleep(4.5)
+        time.sleep(5.5)
         print(".\n.\nThe contestant choosing a letter will automatically get a chance to solve. Here we go.")
-        time.sleep(3.5)
+        time.sleep(4.5)
         print(".")
         time.sleep(0.15)
         print(".")
@@ -58659,7 +58660,7 @@ while not end_game:
         print(".")
         curr_prize = wheel_R4[random.randint(0,len(wheel_R4)-1)]
         print("     $" + str("{:,}".format(curr_prize)) + ". Consonants are worth $" + str("{:,}".format(curr_prize+1000)) + ".\n.\n.")
-        time.sleep(2.5)
+        time.sleep(3.5)
         banks = [p1_bank,p2_bank,p3_bank]
         if min(banks) == banks[0]:
             player_turn = 1
@@ -58699,7 +58700,7 @@ while not end_game:
                     print(str(curr_name) + " has the least amount of money and is playing first...")
                 else:
                     print(str(curr_name) + " is playing...")
-                time.sleep(1.5)
+                time.sleep(2.5)
                 if curr_name == "Computer #1" or curr_name == "Computer #2":
                     if all(elem in consonants_chosen for elem in uc_puzzle) and all(elem in vowels_chosen for elem in uv_puzzle):
                         solve_time = True
@@ -58935,7 +58936,7 @@ while not end_game:
         letters_chosen = []
         consonants_chosen = []; vowels_chosen = []
         print(".\n.\nThank you to the other contestants for playing.\n")
-        time.sleep(3.5)
+        time.sleep(5.5)
         print("-----------------------------------------------------------------------------------------\n")
         in_play = True
         all_rev = False
@@ -58946,7 +58947,7 @@ while not end_game:
         print("--------------------------------")
         print("          BONUS ROUND:          ")
         print("--------------------------------")
-        time.sleep(1.5)
+        time.sleep(2.5)
         if winner == "Computer #1" or winner == "Computer #2":
             print("\n" + winner + " will play the bonus round now. Sit back and enjoy (or turn away in dismay).")
             time.sleep(4.5)
@@ -58979,7 +58980,7 @@ while not end_game:
         
         # Markovify bonus round
         puzzle = doMarkovify_1(23,52)
-        time.sleep(3.5)
+        time.sleep(5.5)
 
         u_puzzle = []
         uc_puzzle = []
@@ -59074,8 +59075,10 @@ while not end_game:
             new_picks[3] = new_picks[3].upper()
             letters_chosen.append(new_picks[3])
             vowels_chosen.append(new_picks[3])
-
-        print(".\n.\n" + winner + ", you selected " + new_picks[0] + ", " + new_picks[1] + ", " + new_picks[2] + ", and " + new_picks[3] +".")
+        if winner != "Computer #1" and winner != "Computer #2":
+           print(".\n.\n" + winner + ", you selected " + new_picks[0] + ", " + new_picks[1] + ", " + new_picks[2] + ", and " + new_picks[3] + ".") 
+        else:
+            print(".\n.\nThe computer has selected " + new_picks[0] + ", " + new_picks[1] + ", " + new_picks[2] + ", and " + new_picks[3] + ".")
         time.sleep(2.5)
         print(".\n.\nLet's reveal these letters in the puzzle...\n\n")
         time.sleep(3.5)
@@ -59086,15 +59089,17 @@ while not end_game:
         for puzz in tossup_print:
             print('\r' + str(puzz), end='')
             with pynput.keyboard.Listener(on_press=onPress) as ls:
-                threading.Timer(1.4, ls.stop).start()
+                threading.Timer(1.0, ls.stop).start()
                 ls.join()
                 
-        time.sleep(2.5)
+        time.sleep(1.5)
         print("\n\n\nRemember, the category is: " + category + ".")
         time.sleep(2.5)
         if winner != "Computer #1" and winner != "Computer #2":
             bonus_solve = inputErrorHandle(".\n.\nCan you figure it out? Type 'Solve' to solve or 'Skip' to forfeit your chance. ",12)
         else:
+            print(".\n.\n" + str(winner) + " is thinking...")
+            time.sleep(3.5)
             if diff.lower() == 'easy':
                 if puzz.count("_")/len(puzzle) <= 0.18:
                     bonus_solve = 'solve'
@@ -59116,9 +59121,9 @@ while not end_game:
             if winner == "Computer #1" or winner == "Computer #2":
                 print(".\n.\n" + str(winner) + " is attempting to solve the puzzle...\n.\n.")
                 time.sleep(3.5)
-                if diff.lower() == 'easy' and random.randint(1,2) == 1:
+                if diff.lower() == 'easy' and random.randint(1,4) == 1:
                     solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
-                elif diff.lower() == 'medium' and random.randint(1,4) == 1:
+                elif diff.lower() == 'medium' and random.randint(1,6) == 1:
                     solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
                 elif diff.lower() == 'hard' and random.randint(1,8) == 1:
                     solve_guess = ' '.join([''.join(random.sample(word, len(word))) for word in puzzle.split()])
